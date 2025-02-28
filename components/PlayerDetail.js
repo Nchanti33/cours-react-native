@@ -12,6 +12,7 @@ import {
 import { ApiService } from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import CardsList from "./CardsList";
 
 const fetchPlayerData = async (playerTag) => {
   const token = await AsyncStorage.getItem("token");
@@ -47,6 +48,8 @@ export default function PlayerDetail({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [chestsModalVisible, setChestsModalVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [cardModalVisible, setCardModalVisible] = useState(false);
   const tag = route.params?.playerTag || route.params?.tag?.replace("#", "");
 
   useEffect(() => {
@@ -82,6 +85,50 @@ export default function PlayerDetail({ route, navigation }) {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Card Detail Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={cardModalVisible}
+        onRequestClose={() => setCardModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            {selectedCard && (
+              <>
+                <Text style={styles.modalTitle}>{selectedCard.name}</Text>
+                {selectedCard.iconUrls?.medium && (
+                  <Image
+                    source={{ uri: selectedCard.iconUrls.medium }}
+                    style={styles.modalCardImage}
+                  />
+                )}
+                <View style={styles.cardDetailInfo}>
+                  <Text style={styles.infoText}>
+                    Level: {selectedCard.level}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Max Level: {selectedCard.maxLevel}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Elixir Cost: {selectedCard.elixirCost}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Rarity: {selectedCard.rarity}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setCardModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Player Info Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Player Info</Text>
@@ -99,6 +146,30 @@ export default function PlayerDetail({ route, navigation }) {
           <Text style={styles.statsText}>Losses: {playerInfo.losses}</Text>
         </View>
       </View>
+
+      {/* Current Deck Section */}
+      <CardsList
+        title="Current Deck"
+        cards={playerInfo.currentDeck}
+        onCardPress={(card) => {
+          setSelectedCard(card);
+          setCardModalVisible(true);
+        }}
+        showEvolutions={true}
+      />
+
+      {/* Last Battle Deck Section */}
+      {battleLog.length > 0 && (
+        <CardsList
+          title="Last Battle Deck"
+          cards={battleLog[0].team[0].cards}
+          onCardPress={(card) => {
+            setSelectedCard(card);
+            setCardModalVisible(true);
+          }}
+          showEvolutions={true}
+        />
+      )}
 
       {/* Chests Modal */}
       <Modal
@@ -165,6 +236,16 @@ export default function PlayerDetail({ route, navigation }) {
           </View>
         ))}
       </View>
+
+      {/* Owned Cards Section */}
+      <CardsList
+        title={`Owned Cards (${playerInfo.cards?.length || 0})`}
+        cards={playerInfo.cards?.sort((a, b) => b.level - a.level)}
+        onCardPress={(card) => {
+          setSelectedCard(card);
+          setCardModalVisible(true);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -200,21 +281,6 @@ const styles = StyleSheet.create({
   statsText: {
     fontSize: 16,
     marginVertical: 2,
-  },
-  chestItem: {
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-    marginRight: 10,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  chestIndex: {
-    fontWeight: "bold",
-  },
-  chestName: {
-    fontSize: 12,
-    textAlign: "center",
   },
   battleItem: {
     flexDirection: "row",

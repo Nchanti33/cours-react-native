@@ -18,28 +18,16 @@ export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
 
-  const query = async () => {
+  const fetchCards = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
-      axios
-        .get("https://api.clashroyale.com/v1/cards", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          console.log(
-            "Response data structure:",
-            JSON.stringify(response.data.items[0], null, 2)
-          );
-          setCards(response.data.items);
-          setLoading(false);
-        })
-        .catch((error) => {
-          setError(error);
-          console.warn(error);
-          setLoading(false);
-        });
+      const response = await axios.get("https://api.clashroyale.com/v1/cards", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCards(response.data.items);
+      setLoading(false);
     } catch (error) {
       setError(error);
       setLoading(false);
@@ -47,7 +35,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    query();
+    fetchCards();
   }, []);
 
   if (loading) {
